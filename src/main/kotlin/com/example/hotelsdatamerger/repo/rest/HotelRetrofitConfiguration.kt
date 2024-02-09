@@ -26,7 +26,7 @@ class HotelRetrofitConfiguration {
 		return OkHttpClient.Builder()
 			.addInterceptor(
 				HttpLoggingInterceptor()
-					.setLevel(HttpLoggingInterceptor.Level.BASIC)
+					.setLevel(HttpLoggingInterceptor.Level.BODY)
 			)
 			.build()
 	}

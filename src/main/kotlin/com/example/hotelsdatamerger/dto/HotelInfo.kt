@@ -1,4 +1,4 @@
-package com.example.hotelsdatamerger.data
+package com.example.hotelsdatamerger.dto
 
 data class HotelInfo(
 	val id : String

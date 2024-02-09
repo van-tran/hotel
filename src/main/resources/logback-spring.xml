@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <variable name="totalSizeCap" value="${logback.totalSizeCap:-500MB}" />
+    <property name="LOGS" value="./logs/hotel"/>
+
+    <appender name="Console"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%d %-5level [%-7.7thread] %30.30logger: %m%n</Pattern>
+        </layout>
+    </appender>
+
+    <appender name="FileInfo"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS}/info.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily and when the file reaches 10 MegaBytes -->
+            <fileNamePattern>${LOGS}/archived/info-%d{yyyy-MM-dd}.%i.log.gz
+            </fileNamePattern>
+            <maxFileSize>250MB</maxFileSize>
+            <maxHistory>100</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d %-5level [%-7.7thread] %30.30logger: %m%n</Pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FileError"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily and when the file reaches 10 MegaBytes -->
+            <fileNamePattern>${LOGS}/archived/error-%d{yyyy-MM-dd}.%i.log.gz
+            </fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>100</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d %-5level [%-7.7thread] %30.30logger: %m%n%throwable</Pattern>
+        </encoder>
+    </appender>
+
+    <!-- LOG everything at INFO level -->
+    <root level="INFO">
+        <appender-ref ref="FileError"/>
+        <appender-ref ref="FileInfo"/>
+        <appender-ref ref="Console"/>
+    </root>
+
+    <!-- LOG "com.example*" at DEBUG level -->
+    <logger name="com.example" level="INFO" additivity="false">
+        <appender-ref ref="FileError"/>
+        <appender-ref ref="FileInfo"/>
+        <appender-ref ref="Console"/>
+    </logger>
+
+
+</configuration>

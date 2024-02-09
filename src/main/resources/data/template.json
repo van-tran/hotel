@@ -1,0 +1,41 @@
+[
+  {
+    "name": "id",
+    "alternativeNamesRegex" : [
+      "id",
+      "hotel(-|_|){0,2}id"
+    ]
+  },
+  {
+    "name": "location",
+    "alternativeNamesRegex" : [
+      "location",
+      "place"
+    ],
+    "includedAttributesRegex" : [
+      "dest(ination){0,1}(_){0,1}(id){0,1}",
+      "lat(itude){0,1}",
+      "long(itude){0,1}",
+      "address",
+      "postalcode",
+      "country",
+      "city"
+    ]
+  },
+  {
+    "name": "description",
+    "alternativeNamesRegex" : [
+      "description(s){0,1}",
+      "detail(s){0,1}",
+      "info(rmation){0,1}"
+    ]
+  },
+  {
+    "name": "amenities",
+    "alternativeNamesRegex" : [
+      "amenities",
+      "facilities"
+    ]
+  }
+
+]
