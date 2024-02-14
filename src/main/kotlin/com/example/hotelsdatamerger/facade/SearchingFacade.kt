@@ -2,15 +2,16 @@ package com.example.hotelsdatamerger.facade
 
 import com.example.hotelsdatamerger.dto.HotelInfo
 import com.example.hotelsdatamerger.repo.rest.HotelRetrofitClient
-import com.example.hotelsdatamerger.repo.source.ConfigurationRepoImpl
 import com.example.hotelsdatamerger.repo.source.IConfigurationRepo
 import com.example.hotelsdatamerger.service.IHotelInfoService
+import com.example.hotelsdatamerger.utils.JsonUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class SearchingFacade(
+	val jsonUtils: JsonUtils,
 	val configurationRepo: IConfigurationRepo,
 	val hotelRetrofitClient: HotelRetrofitClient,
 	val hotelInfoService: IHotelInfoService) {
@@ -23,6 +24,33 @@ class SearchingFacade(
 
 	public suspend fun fetchHotels(searchCriteria: SearchCriteria) : List<HotelInfo>{
 //		0. fetch hotels from sources
+		val attributeTemplate = configurationRepo.getHotelInfoTemplate()
+			.map {
+				it.name to it
+			}
+			.toMap()
+
+		configurationRepo.getSources()
+			.flatMap { source ->
+				hotelRetrofitClient.fetchHotelInfo(source)
+					.let {
+						// parsing response json into nested & flattened Attributes objects (e.g :  location.address, amenities.general, .. )
+						jsonUtils.jsonFileToMap(it.string())
+					}
+					.let {
+						// standardize attribute key name (e.g : facilities -> amenities.other, facilities.general -> amenities.general, ...)
+						hotelInfoService.standardizeAttributeKeys(it)
+					}
+			}.groupBy {
+				// group hotel info from different sources
+				it.hotelID
+			}.mapValues {
+				// score & merge attributes with the same attribute name
+				hotelInfoService.mergeAttributesFromDifferentSource(it.key, it.value)
+			}.let {
+
+			}
+
 
 //		1. filter by search criteria
 //		2. clean & score data

@@ -1,0 +1,69 @@
+{
+  "id":
+    {
+      "name" : "id",
+      "validationRegex" :"(hotel_){0,1}id",
+      "type" : "primitive"
+    }
+  ,
+  "destination": [
+    "destination(-|_|){0,1}id"
+  ],
+  "name": [
+    "(hotel){0,1}(_){0,1}name"
+  ],
+  "location.address": [
+    "(location.){0,1}address"
+  ],
+  "location.country": [
+    "(location.){0,1}country"
+  ],
+  "location.lat": [
+    "(location.){0,1}lat(itude){0,1}"
+  ],
+  "location.long": [
+    "(location.){0,1}long(itude){0,1}"
+  ],
+  "location.city": [
+    "(location.){0,1}city"
+  ],
+  "location.postal": [
+    "(location.){0,1}postal(_){0,1}code"
+  ],
+  "description": [
+    "(description)|(details)|(info(rmation){0,1})"
+  ],
+  "amenities.general.<i1>": [
+    "((amenities)|(facilities)).general"
+  ],
+  "amenities.room.<i1>": [
+    "((amenities)|(facilities)).room"
+  ],
+  "amenities.other.<i1>": [
+    "(amenities)|(facilities)"
+  ],
+  "images.rooms.<i1>.url": [
+    "((image)|(photo))(s){0,1}.room(s){0,1}.(\\d)+.url"
+  ],
+  "images.rooms.<i1>.description": [
+    "((image)|(photo))(s){0,1}.room(s){0,1}.(\\d)+.((description)|caption)"
+  ],
+  "images.site.<i1>.url": [
+    "((image)|(photo))(s){0,1}.site(s){0,1}.(\\d)+.url"
+  ],
+  "images.site.<i1>.description": [
+    "((image)|(photo))(s){0,1}.site(s){0,1}.(\\d)+.((description)|caption)"
+  ],
+  "images.amenities.<i1>.url": [
+    "((image)|(photo))(s){0,1}.amenities(s){0,1}.(\\d)+.url"
+  ],
+  "images.amenities.<i1>.description": [
+    "((image)|(photo))(s){0,1}.amenities(s){0,1}.(\\d)+.((description)|caption)"
+  ],
+  "images.others.<i1>.url": [
+    "((image)|(photo))(s){0,1}.(\\d)+.url"
+  ],
+  "images.others.<i1>.description": [
+    "((image)|(photo))(s){0,1}.(\\d)+.((description)|caption)"
+  ]
+}

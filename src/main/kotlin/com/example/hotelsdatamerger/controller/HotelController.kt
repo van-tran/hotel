@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("hotels")
 class HotelController(val hotelSearchingFacade: SearchingFacade) {
 
-	@GetMapping("/v1")
+	@GetMapping("/v1/hotels")
 	suspend fun searchHotelByDestination(@RequestParam destinationID: String): List<HotelInfo> {
 		return hotelSearchingFacade.fetchHotels(SearchCriteria.ByDestinationID(destinationID))
 	}
