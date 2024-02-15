@@ -6,6 +6,7 @@ import com.example.hotelsdatamerger.dto.InfoObject
 import com.example.hotelsdatamerger.facade.SearchingFacade
 import com.example.hotelsdatamerger.repo.source.IConfigurationRepo
 import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -13,12 +14,14 @@ import org.springframework.stereotype.Service
 
 
 @Service
-class JsonUtils(val objectMapper: ObjectMapper,
-                val configurationRepo: IConfigurationRepo) {
+class JsonUtils(
+    val objectMapper: ObjectMapper,
+    val configurationRepo: IConfigurationRepo
+) {
 
     val logger: Logger = LoggerFactory.getLogger(SearchingFacade::class.java)
 
-    fun objectToString(anyObj: Any) : String = objectMapper.writeValueAsString(anyObj)
+    fun objectToString(anyObj: Any): String = objectMapper.writeValueAsString(anyObj)
     fun jsonFileToMap(jsonString: String): List<InfoObject> {
 
         return objectMapper.readValue(jsonString, object : TypeReference<List<Map<String, Any>>>() {})
@@ -28,10 +31,38 @@ class JsonUtils(val objectMapper: ObjectMapper,
             }
             ?.map { InfoObject(it) }
             ?.also {
-                logger.info("flatten map : {}", it )
+                logger.info("flatten map : {}", it)
             }
             ?: emptyList()
 
+    }
+
+    fun attributeToJsonObject(attributes: List<AttributeContent>): Map<String, Any> {
+        return attributes
+            .groupBy {
+                it.name.split(".")[0]
+            }
+            .mapValues { (key, lstOfAttributes) ->
+                if (lstOfAttributes.all { it.name.length > key.length }) {
+                    lstOfAttributes.map {
+                        it.name = it.name.substringAfter('.')
+                        it
+                    }.let {
+                        attributeToJsonObject(it)
+                    }
+                } else {
+                    lstOfAttributes
+                        .map {
+                            when (it) {
+                                is AttributeContent.PlainString -> it.value
+                                is AttributeContent.ListString -> it.value
+                                is AttributeContent.ListNestedObject -> it.value
+                                    .map { attributeToJsonObject(it.attributes) }
+                            }
+
+                        }
+                }
+            }
     }
 
     fun flatten(root: String, map: List<Pair<String, Any>>): List<AttributeContent> {
@@ -39,7 +70,7 @@ class JsonUtils(val objectMapper: ObjectMapper,
         val directValues = map.filter { node ->
             node.second is String
         }.map { node ->
-            AttributeContent.PlainString("${base}${node.first}", node.second as String)
+            AttributeContent.PlainString("${base}.${node.first}", node.second as String)
         }
         val directCollectionValues = map.filter {
             it.second is List<*>
@@ -55,7 +86,7 @@ class JsonUtils(val objectMapper: ObjectMapper,
                                     it.key to it.value
                                 }
                                 .let {
-                                    flatten("", it)
+                                    flatten("${root}_", it)
                                 }.let {
                                     InfoObject(it)
                                 }
