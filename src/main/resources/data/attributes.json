@@ -1,23 +1,15 @@
 [
   {
-    "replacement" : "id",
-    "regex" :"(hotel_){0,1}id"
+    "replacement" : "hotel_id",
+    "regex" :"^(hotel_){0,1}id"
   },
   {
-    "replacement" : "destination",
-    "regex" :"destination(-|_|){0,1}id"
-  },
-  {
-    "replacement" : "destination",
-    "regex" :"destination(-|_|){0,1}id"
-  },
-  {
-    "replacement" : "destination",
-    "regex" :"destination(-|_|){0,1}id"
+    "replacement" : "destination_id",
+    "regex" :"^destination(_id){0,1}"
   },
   {
     "replacement" : "name",
-    "regex" :"(hotel){0,1}(_){0,1}name"
+    "regex" :"^(hotel){0,1}(_){0,1}name"
   },
   {
     "replacement" : "location.address",
@@ -32,8 +24,8 @@
     "regex" :"(location.){0,1}lat(itude){0,1}"
   },
   {
-    "replacement" : "location.long",
-    "regex" :"(location.){0,1}long(itude){0,1}"
+    "replacement" : "location.lng",
+    "regex" :"(location.){0,1}(longitude|lng)"
   },
   {
     "replacement" : "location.city",
@@ -87,6 +79,6 @@
   },
   {
     "replacement" : "",
-    "regex" :".+_"
+    "regex" :".+-"
   }
 ]

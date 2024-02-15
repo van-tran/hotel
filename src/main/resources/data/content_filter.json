@@ -1,0 +1,17 @@
+[
+  {
+    "attrNameRegex": ".*",
+    "replacement": "",
+    "regex": "^ (?=\\w)"
+  },
+  {
+    "attrNameRegex": ".*",
+    "replacement": "Television",
+    "regex": "^( )*(t|T)(v|V)(?=( |$))"
+  },
+  {
+    "attrNameRegex": ".*",
+    "replacement": "Air Conditioner",
+    "regex": "^( )*(Aircon)(?=( |$))"
+  }
+]

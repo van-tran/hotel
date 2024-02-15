@@ -8,4 +8,5 @@ interface IContentService {
     fun normalize(contentValue: String): String
     fun scoreContent(attribute: String): Int
     fun normalize(contentValue: InfoObject): String
+    fun <T> scoreContent(attribute: T): Int
 }

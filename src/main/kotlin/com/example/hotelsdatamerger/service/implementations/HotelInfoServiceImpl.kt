@@ -7,6 +7,7 @@ import com.example.hotelsdatamerger.repo.rest.HotelRetrofitClient
 import com.example.hotelsdatamerger.repo.source.IConfigurationRepo
 import com.example.hotelsdatamerger.service.IContentService
 import com.example.hotelsdatamerger.service.IHotelInfoService
+import com.example.hotelsdatamerger.utils.AttributeProcessor
 import com.example.hotelsdatamerger.utils.JsonUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -41,20 +42,26 @@ class HotelInfoServiceImpl(
         hotelInfoItems.flatMap { items ->
             items.attributes.flatMap {
                 when (it) {
-                    is AttributeContent.PlainString, is AttributeContent.ListString -> listOf(it.name)
+                    is AttributeContent.PlainString<*>, is AttributeContent.ListString -> listOf(it.name)
                     is AttributeContent.ListNestedObject -> listOf(it.name) + extractKeySet(it.value)
                 }
             }
         }.toSet()
 
-    fun standardizeAttributeName(infoObject: InfoObject, attributeMapper: Map<String, String>): InfoObject {
+    fun standardizeAttributeName(infoObject: InfoObject, attributeMapper: Map<String, AttributeInfo>): InfoObject {
         return infoObject.attributes
             .map { attr ->
-                val refinedName = attributeMapper.get(attr.name) ?: attr.name
+                val (refinedName, virtualNode) = attributeMapper.get(attr.name)?.let { it.name to it.virtualNode }
+                    ?: (attr.name to attr.virtualNode)
 
                 when (attr) {
-                    is AttributeContent.PlainString -> AttributeContent.PlainString(refinedName, attr.value)
-                    is AttributeContent.ListString -> AttributeContent.ListString(refinedName, attr.value)
+                    is AttributeContent.PlainString<*> -> AttributeContent.PlainString(
+                        refinedName,
+                        attr.value,
+                        virtualNode
+                    )
+
+                    is AttributeContent.ListString -> AttributeContent.ListString(refinedName, attr.value, virtualNode)
                     is AttributeContent.ListNestedObject ->
                         AttributeContent.ListNestedObject(
                             refinedName,
@@ -66,37 +73,96 @@ class HotelInfoServiceImpl(
             }
     }
 
+    fun standardizeAttributeName(infoObject: InfoObject, lstOfProcessors: List<AttributeProcessor>): InfoObject {
+        return infoObject.attributes
+            .map { attr ->
+                val refinedAttributeInfo = lstOfProcessors.fold(AttributeInfo(attr.name, attr.virtualNode)) { attr, processor ->
+                    processor.standardizeKey(attr)
+                }
+
+                when (attr) {
+                    is AttributeContent.PlainString<*> -> {
+                        val refinedContentValue = lstOfProcessors.fold(attr.value) { contentValue, processor ->
+                            processor.standardizeValue(refinedAttributeInfo, contentValue)
+                        }
+                        AttributeContent.PlainString(
+                            refinedAttributeInfo.name,
+                            refinedContentValue,
+                            refinedAttributeInfo.virtualNode
+                        )
+                    }
+
+                    is AttributeContent.ListString -> AttributeContent.ListString(
+                        refinedAttributeInfo.name,
+                        attr.value.map {
+                            lstOfProcessors.fold(it) { contentValue, processor ->
+                                processor.standardizeValue(refinedAttributeInfo, contentValue)
+                            }
+                        },
+                        refinedAttributeInfo.virtualNode
+                    )
+
+                    is AttributeContent.ListNestedObject ->
+                        AttributeContent.ListNestedObject(
+                            refinedAttributeInfo.name,
+                            attr.value.map { standardizeAttributeName(it, lstOfProcessors) })
+                }
+            }
+            .let {
+                InfoObject(it)
+            }
+    }
+
     override suspend fun standardizeAttributeKeys(hotelInfo: List<InfoObject>): List<FlatHotelInfo> {
         val attributeMapper = extractKeySet(hotelInfo)
             .map { attributeName ->
-                attributeName to attributeRegex.fold(attributeName) { attrString, attributeMapping ->
-                    attrString.replace(Regex(attributeMapping.regex), attributeMapping.replacement)
+                attributeRegex.fold(AttributeInfo(attributeName, false)) { attr, attributeMapping ->
+                    var virtualNode = attr.virtualNode
+                    attr.name.replace(Regex(attributeMapping.regex)) { matchResult ->
+                        virtualNode = virtualNode || attributeMapping.virtualNode
+                        attributeMapping.replacement
+                    }
+                        .takeIf { it != attributeName }
+                        ?.let {
+                            AttributeInfo(it, virtualNode)
+                        } ?: attr
+                }.let {
+                    attributeName to it
                 }
             }
             .toMap()
+        val attributeProcessors = listOf(
+            AttributeProcessor.KeyTransformer(attributeMapper),
+            AttributeProcessor.ValueTransformer(configurationRepo.getContentMapper())
+        )
         return hotelInfo.parallelStream()
             .map {
-                val refinedAttributes = standardizeAttributeName(it, attributeMapper)
+//                val refinedAttributes = standardizeAttributeName(it, attributeMapper)
+                val refinedAttributes = standardizeAttributeName(it, attributeProcessors)
                 val hotelID = refinedAttributes.attributes.find {
-                    it is AttributeContent.PlainString && it.name == hotelIDKeyName
+                    it is AttributeContent.PlainString<*>
+                            && it.name == hotelIDKeyName
                 }?.let {
-                    (it as AttributeContent.PlainString).value
+                    (it as AttributeContent.PlainString<*>).value
                 } ?: let {
                     logger.error("Missing hotel id")
                     ""
                 }
-                FlatHotelInfo(hotelID, refinedAttributes)
+                FlatHotelInfo(hotelID.toString(), refinedAttributes)
             }.toList()
     }
 
-    override suspend fun mergeAttributesFromDifferentSource(hotelID: String, lsOfHotelInfo: List<FlatHotelInfo>): FlatHotelInfo {
+    override suspend fun mergeAttributesFromDifferentSource(
+        hotelID: String,
+        lsOfHotelInfo: List<FlatHotelInfo>
+    ): FlatHotelInfo {
         return lsOfHotelInfo
             .flatMap { it.content.attributes }
             .filterNot { it.name.isNullOrBlank() }
             .let { attributeNodes ->
                 // merge all attribute has plain string value
                 val plainStringNodes: List<AttributeContent> = attributeNodes
-                    .filterIsInstance<AttributeContent.PlainString>()
+                    .filterIsInstance<AttributeContent.PlainString<*>>()
                     .groupBy { it.name }
                     .mapValues {
                         it.value.maxByOrNull { contentService.scoreContent(it.value) }
@@ -104,11 +170,15 @@ class HotelInfoServiceImpl(
                     .filterNotNull()
                     .toList()
 
-                val lstStringNodes = processListStringAttributes(attributeNodes
-                    .filterIsInstance<AttributeContent.ListString>())
+                val lstStringNodes = processListStringAttributes(
+                    attributeNodes
+                        .filterIsInstance<AttributeContent.ListString>()
+                )
 
-                val lstObjectNodes = processListStringAttributes(attributeNodes
-                    .filterIsInstance<AttributeContent.ListString>())
+                val lstObjectNodes = processListObjectAttributes(
+                    attributeNodes
+                        .filterIsInstance<AttributeContent.ListNestedObject>()
+                )
 
                 plainStringNodes + lstStringNodes + lstObjectNodes
             }
@@ -123,7 +193,7 @@ class HotelInfoServiceImpl(
             .groupBy { it.name }
             .mapValues { (name, values) ->
                 values.flatMap {
-                    (it as AttributeContent.ListString).value
+                    it.value
                 }.groupBy {
                     contentService.normalize(it)
                 }.mapValues {
@@ -131,14 +201,17 @@ class HotelInfoServiceImpl(
                 }.values
                     .filterNotNull()
                     .let {
-                        AttributeContent.ListString(name, it.toList())
+                        AttributeContent.ListString(
+                            name,
+                            it.toList(),
+                            values.fold(false) { flag, node -> node.virtualNode || flag })
                     }
             }
             .values
             .toList()
 
         // merge and create new node when having different structure
-        return lstStringNodes.filter {
+        val mergedNodes = lstStringNodes.filter {
             it.virtualNode
         }
             .map { attributeNode ->
@@ -151,10 +224,57 @@ class HotelInfoServiceImpl(
                     .map {
                         contentService.normalize(it)
                     }.toSet()
-                AttributeContent.ListString(attributeNode.name, attributeNode.value.filterNot {
+                AttributeContent.ListString(
+                    attributeNode.name,
+                    attributeNode.value.filterNot {
+                        existingValues.contains(contentService.normalize(it))
+                    },
+                    attributeNode.virtualNode
+                )
+            }
+
+        return lstStringNodes.filterNot { it.virtualNode } + mergedNodes
+    }
+
+    fun processListObjectAttributes(attributeNodes: List<AttributeContent.ListNestedObject>): List<AttributeContent> {
+        // deduplicate attributes have collection String values
+        val lstObjectNodes: List<AttributeContent.ListNestedObject> = attributeNodes
+            .groupBy { it.name }
+            .mapValues { (name, values) ->
+                values.flatMap {
+                    it.value
+                }.groupBy {
+                    contentService.normalize(it)
+                }.mapValues {
+                    it.value.maxByOrNull { contentService.scoreContent(it) }
+                }.values
+                    .filterNotNull()
+                    .let {
+                        AttributeContent.ListNestedObject(name, it.toList())
+                    }
+            }
+            .values
+            .toList()
+
+        // merge and create new node when having different structure
+        val mergedNodes = lstObjectNodes.filter {
+            it.virtualNode
+        }
+            .map { attributeNode ->
+                val namePrefix = attributeNode.name.substringBeforeLast('.')
+                val existingValues = attributeNodes.filter {
+                    !it.virtualNode &&
+                            it.name.startsWith(namePrefix)
+                }
+                    .flatMap { it.value }
+                    .map {
+                        contentService.normalize(it)
+                    }.toSet()
+                AttributeContent.ListNestedObject(attributeNode.name, attributeNode.value.filterNot {
                     existingValues.contains(contentService.normalize(it))
                 })
             }
+        return lstObjectNodes.filterNot { it.virtualNode } + mergedNodes
     }
     //
 //

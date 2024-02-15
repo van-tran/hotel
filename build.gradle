@@ -26,6 +26,8 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    //For runBlockingTest, CoroutineDispatcher etc.
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test"
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
 
     implementation "org.jetbrains.kotlin:kotlin-reflect"

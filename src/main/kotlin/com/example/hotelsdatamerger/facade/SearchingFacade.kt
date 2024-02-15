@@ -40,9 +40,9 @@ class SearchingFacade(
             }.groupBy {
                 // group hotel info from different sources
                 it.hotelID
-            }.mapValues {
+            }.mapValues { (hotelID, lstOfData) ->
                 // score & merge attributes with the same attribute name
-                hotelInfoService.mergeAttributesFromDifferentSource(it.key, it.value)
+                hotelInfoService.mergeAttributesFromDifferentSource(hotelID, lstOfData)
             }.let { mapOfHotels ->
                 // filter by hotel id
                 when (searchCriteria) {
@@ -56,7 +56,7 @@ class SearchingFacade(
                     is SearchCriteria.ByDestinationID -> mapOfHotels.values.filter {
                         it.content.attributes.any {
                             it.name == "destination"
-                                    && it is AttributeContent.PlainString
+                                    && it is AttributeContent.PlainString<*>
                                     && it.value == searchCriteria.destID
                         }
                     }

@@ -24,10 +24,11 @@ class JsonUtils(
     fun objectToString(anyObj: Any): String = objectMapper.writeValueAsString(anyObj)
     fun jsonFileToMap(jsonString: String): List<InfoObject> {
 
-        return objectMapper.readValue(jsonString, object : TypeReference<List<Map<String, Any>>>() {})
+        return objectMapper.readValue(jsonString, object : TypeReference<List<Map<String, Any?>>>() {})
             ?.map {
                 flatten("",
-                    it.map { it.key to it.value })
+                    it.filterNot { (key, value) -> value == null }
+                        .map { (key, value) -> key to value!! })
             }
             ?.map { InfoObject(it) }
             ?.also {
@@ -54,7 +55,7 @@ class JsonUtils(
                     lstOfAttributes
                         .map {
                             when (it) {
-                                is AttributeContent.PlainString -> it.value
+                                is AttributeContent.PlainString<*> -> it.value
                                 is AttributeContent.ListString -> it.value
                                 is AttributeContent.ListNestedObject -> it.value
                                     .map { attributeToJsonObject(it.attributes) }
@@ -67,31 +68,35 @@ class JsonUtils(
 
     fun flatten(root: String, map: List<Pair<String, Any>>): List<AttributeContent> {
         val base = if (root.isNotBlank()) "${root}." else ""
-        val directValues = map.filter { node ->
-            node.second is String
-        }.map { node ->
-            AttributeContent.PlainString("${base}${node.first}", node.second as String)
+        val directValues = map.filterNot { node ->
+            node.second is List<*> ||
+                    node.second is Map<*, *>
+        }.map { (name, value) ->
+            AttributeContent.PlainString("${base}${name.toLowerCase()}", value)
         }
         val directCollectionValues = map.filter {
             it.second is List<*>
-        }.map { node ->
-            (node.second as List<*>)
+        }.map { (name, value) ->
+            (value as List<*>)
                 ?.filterNotNull()
                 ?.let {
                     val content: AttributeContent? = when {
-                        it.all { it is String } -> AttributeContent.ListString("${base}${node.first}", it.map { it.toString() })
+                        it.all { it is String } -> AttributeContent.ListString(
+                            "${base}${name.toLowerCase()}",
+                            it.map { it.toString() })
+
                         it.all { it is Map<*, *> } -> it.map {
                             (it as Map<String, Any>)
                                 .map {
                                     it.key to it.value
                                 }
                                 .let {
-                                    flatten("${root}_", it)
+                                    flatten("${root}-", it)
                                 }.let {
                                     InfoObject(it)
                                 }
                         }.let {
-                            AttributeContent.ListNestedObject("${base}${node.first}", it)
+                            AttributeContent.ListNestedObject("${base}${name.toLowerCase()}", it)
                         }
 
                         else -> {
@@ -105,7 +110,7 @@ class JsonUtils(
 
         val childrenValues = map.filter {
             it.second is Map<*, *>
-        }.flatMap {(name, mapValues) ->
+        }.flatMap { (name, mapValues) ->
             flatten("${base}${name}",
                 (mapValues as Map<String, *>)
                     .filter { it.value != null }

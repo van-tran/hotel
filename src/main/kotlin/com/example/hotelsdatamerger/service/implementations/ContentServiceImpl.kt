@@ -19,6 +19,9 @@ class ContentServiceImpl(val jsonUtils: JsonUtils) : IContentService {
     override fun scoreContent(attribute: String) : Int {
         return Random(100).nextInt(0, 99)
     }
+    override fun <T> scoreContent(attribute: T) : Int {
+        return Random(100).nextInt(0, 99)
+    }
     override fun normalize(contentValue: String) : String {
         return contentValue.trim()
             .lowercase(Locale.getDefault())
