@@ -70,7 +70,7 @@ class JsonUtils(
         val directValues = map.filter { node ->
             node.second is String
         }.map { node ->
-            AttributeContent.PlainString("${base}.${node.first}", node.second as String)
+            AttributeContent.PlainString("${base}${node.first}", node.second as String)
         }
         val directCollectionValues = map.filter {
             it.second is List<*>
@@ -79,7 +79,7 @@ class JsonUtils(
                 ?.filterNotNull()
                 ?.let {
                     val content: AttributeContent? = when {
-                        it.all { it is String } -> AttributeContent.ListString(node.first, it.map { it.toString() })
+                        it.all { it is String } -> AttributeContent.ListString("${base}${node.first}", it.map { it.toString() })
                         it.all { it is Map<*, *> } -> it.map {
                             (it as Map<String, Any>)
                                 .map {
@@ -91,7 +91,7 @@ class JsonUtils(
                                     InfoObject(it)
                                 }
                         }.let {
-                            AttributeContent.ListNestedObject(node.first, it)
+                            AttributeContent.ListNestedObject("${base}${node.first}", it)
                         }
 
                         else -> {
@@ -105,9 +105,9 @@ class JsonUtils(
 
         val childrenValues = map.filter {
             it.second is Map<*, *>
-        }.flatMap {
-            flatten("${base}${it.first}",
-                (it.second as Map<String, *>)
+        }.flatMap {(name, mapValues) ->
+            flatten("${base}${name}",
+                (mapValues as Map<String, *>)
                     .filter { it.value != null }
                     .map { it.key to it.value!! })
         }

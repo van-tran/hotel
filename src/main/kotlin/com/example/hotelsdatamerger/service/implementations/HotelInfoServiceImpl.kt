@@ -156,46 +156,7 @@ class HotelInfoServiceImpl(
                 })
             }
     }
-    fun processListStringAttributes(attributeNodes: List<AttributeContent.ListNestedObject>): List<AttributeContent> {
-        // deduplicate attributes have collection String values
-        val lstStringNodes: List<AttributeContent.ListNestedObject> = attributeNodes
-            .groupBy { it.name }
-            .mapValues { (name, values) ->
-                values.flatMap {
-                    it.value
-                }.groupBy {
-                    contentService.normalize(it)
-                }.mapValues {
-                    it.value.maxByOrNull { contentService.scoreContent(it) }
-                }.values
-                    .filterNotNull()
-                    .let {
-                        AttributeContent.ListNestedObject(name, it.toList())
-                    }
-            }
-            .values
-            .toList()
-
-        // merge and create new node when having different structure
-        return lstStringNodes.filter {
-            it.virtualNode
-        }
-            .map { attributeNode ->
-                val namePrefix = attributeNode.name.substringBeforeLast('.')
-                val existingValues = attributeNodes.filter {
-                    !it.virtualNode &&
-                            it.name.startsWith(namePrefix)
-                }
-                    .flatMap { it.value }
-                    .map {
-                        contentService.normalize(it)
-                    }.toSet()
-                AttributeContent.ListNestedObject(attributeNode.name, attributeNode.value.filterNot {
-                    existingValues.contains(contentService.normalize(it))
-                })
-            }
-    }
-//
+    //
 //
 //    suspend fun parseHotelAttribute(hotelInfo: List<List<Pair<String, String>>>) {
 //
