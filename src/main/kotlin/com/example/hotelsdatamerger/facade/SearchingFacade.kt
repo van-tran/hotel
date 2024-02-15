@@ -24,9 +24,9 @@ class SearchingFacade(
     suspend fun fetchSources() = configurationRepo.getSources()
     suspend fun fetchTemplate() = configurationRepo.getHotelInfoTemplate()
 
-    public suspend fun fetchHotels(searchCriteria: SearchCriteria): List<HotelInfo> {
+    public suspend fun fetchHotels(searchCriteria: SearchCriteria): List<Map<String, Any>> {
 //		0. fetch hotels from sources
-        configurationRepo.getSources()
+        return configurationRepo.getSources()
             .flatMap { source ->
                 hotelRetrofitClient.fetchHotelInfo(source)
                     .let {
@@ -47,9 +47,8 @@ class SearchingFacade(
                 // filter by hotel id
                 when (searchCriteria) {
                     is SearchCriteria.ByHotelID -> mapOfHotels
-                        .filterValues { node ->
-                            searchCriteria
-                                .hoteIDs.contains(node.hotelID)
+                        .filterValues { hotelInfo ->
+                            searchCriteria.hoteIDs.contains(hotelInfo.hotelID)
                         }
                         .values.toList()
 
@@ -57,7 +56,7 @@ class SearchingFacade(
                         it.content.attributes.any {
                             it.name == "destination"
                                     && it is AttributeContent.PlainString<*>
-                                    && it.value == searchCriteria.destID
+                                    && searchCriteria.destIDs.contains(it.value)
                         }
                     }
                 }
@@ -65,13 +64,6 @@ class SearchingFacade(
                 jsonUtils.attributeToJsonObject(it.content.attributes)
             }
 
-
-//		1. filter by search criteria
-//		2. clean & score data
-//		3. merge (pick the higher score information)
-//		4. cache (store hotelID with hash of hotel info. Then we could quickly check if is there any change on particular hotel by comparing hash)
-
-        return emptyList()
     }
 
 

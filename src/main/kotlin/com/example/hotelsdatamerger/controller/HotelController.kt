@@ -11,12 +11,16 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("hotels")
+@RequestMapping("v1")
 class HotelController(val hotelSearchingFacade: SearchingFacade) {
 
-	@GetMapping("/v1/hotels")
-	suspend fun searchHotelByDestination(@RequestParam destinationID: String): List<HotelInfo> {
-		return hotelSearchingFacade.fetchHotels(SearchCriteria.ByDestinationID(destinationID))
+	@GetMapping("/hotels")
+	suspend fun findHotelsByID(@RequestParam hotelIDs: List<String>): List<Map<String,Any>> {
+		return hotelSearchingFacade.fetchHotels(SearchCriteria.ByHotelID(hotelIDs))
+	}
+	@GetMapping("/hotels/destinations")
+	suspend fun searchHotelByDestination(@RequestParam destinationIDs: List<String>): List<Map<String,Any>> {
+		return hotelSearchingFacade.fetchHotels(SearchCriteria.ByDestinationID(destinationIDs))
 	}
 	@GetMapping("/v1/configurations/sources")
 	suspend fun fetchConfigurationSources(): List<String> {

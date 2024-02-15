@@ -210,4 +210,26 @@ class HotelsDataMergerApplicationTests {
                 }
         }
     }
+
+
+    /*
+    * Test 6
+    * */
+    @Test
+    fun buildResponseFromFlattenMap() {
+        jsonUtils.jsonFileToMap(TestSet6.rawData1)
+            .let {
+                runBlocking(Dispatchers.Default) {
+                    hotelInfoService.standardizeAttributeKeys(it)
+                }
+            }
+            .map {
+                jsonUtils.attributeToJsonObject( it.content.attributes )
+            }
+            .also {
+                logger.info("result {}", jsonUtils.objectMapper.writeValueAsString(it))
+                assert(it[0].get("hotel_id") == "iJhz")
+                assert(it[0].get("amenities") is List<*>)
+            }
+    }
 }

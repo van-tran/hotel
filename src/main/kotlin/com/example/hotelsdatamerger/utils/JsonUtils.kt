@@ -53,15 +53,15 @@ class JsonUtils(
                     }
                 } else {
                     lstOfAttributes
-                        .map {
+                        .first()
+                        .let {
                             when (it) {
                                 is AttributeContent.PlainString<*> -> it.value
                                 is AttributeContent.ListString -> it.value
                                 is AttributeContent.ListNestedObject -> it.value
                                     .map { attributeToJsonObject(it.attributes) }
                             }
-
-                        }
+                        } ?: ""
                 }
             }
     }
