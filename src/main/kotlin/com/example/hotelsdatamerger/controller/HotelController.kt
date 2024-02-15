@@ -1,11 +1,9 @@
 package com.example.hotelsdatamerger.controller
 
-import com.example.hotelsdatamerger.dto.HotelInfo
 import com.example.hotelsdatamerger.facade.SearchCriteria
 import com.example.hotelsdatamerger.facade.SearchingFacade
-import com.example.hotelsdatamerger.model.HotelAttributeTemplate
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -26,8 +24,11 @@ class HotelController(val hotelSearchingFacade: SearchingFacade) {
 	suspend fun fetchConfigurationSources(): List<String> {
 		return hotelSearchingFacade.fetchSources()
 	}
-	@GetMapping("/v1/configurations/templates")
-	suspend fun fetchConfigurationAttributeTemplates(): List<HotelAttributeTemplate> {
-		return hotelSearchingFacade.fetchTemplate()
+
+
+	@Scheduled(fixedRate = 3*60*1000) // every 3 minutes
+	suspend fun invalidateCache() {
+		hotelSearchingFacade.updateCacheData()
 	}
+
 }

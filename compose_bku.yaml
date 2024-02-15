@@ -1,1 +1,22 @@
+version: '2'
 services:
+  app:
+    container_name: hotels-server
+    build:
+      context: docker-hotels-server
+      dockerfile: Dockerfile
+    image: hotels-server:latest
+    ports:
+      - 8080:8080
+    networks:
+      - spring-cloud-network
+  redis:
+    container_name: redis
+    image: redis:v1
+    build: ./redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+networks:
+  spring-cloud-network:
+    driver: bridge

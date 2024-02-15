@@ -1,7 +1,7 @@
 package com.example.hotelsdatamerger.facade
 
 import com.example.hotelsdatamerger.dto.AttributeContent
-import com.example.hotelsdatamerger.dto.HotelInfo
+import com.example.hotelsdatamerger.repo.cache.IDistributedCache
 import com.example.hotelsdatamerger.repo.rest.HotelRetrofitClient
 import com.example.hotelsdatamerger.repo.source.IConfigurationRepo
 import com.example.hotelsdatamerger.service.IHotelInfoService
@@ -15,7 +15,8 @@ class SearchingFacade(
     val jsonUtils: JsonUtils,
     val configurationRepo: IConfigurationRepo,
     val hotelRetrofitClient: HotelRetrofitClient,
-    val hotelInfoService: IHotelInfoService
+    val hotelInfoService: IHotelInfoService,
+    val cacheService: IDistributedCache
 ) {
 
     // Initializing instance of Logger for Service
@@ -28,15 +29,8 @@ class SearchingFacade(
 //		0. fetch hotels from sources
         return configurationRepo.getSources()
             .flatMap { source ->
-                hotelRetrofitClient.fetchHotelInfo(source)
-                    .let {
-                        // parsing response json into nested & flattened Attributes objects (e.g :  location.address, amenities.general, .. )
-                        jsonUtils.jsonFileToMap(it.string())
-                    }
-                    .let {
-                        // standardize attribute key name (e.g : facilities -> amenities.other, facilities.general -> amenities.general, ...)
-                        hotelInfoService.standardizeAttributeKeys(it)
-                    }
+                getFlatHotelInfo(source)
+
             }.groupBy {
                 // group hotel info from different sources
                 it.hotelID
@@ -64,6 +58,28 @@ class SearchingFacade(
                 jsonUtils.attributeToJsonObject(it.content.attributes)
             }
 
+    }
+
+    private suspend fun getFlatHotelInfo(source: String) = cacheService.getDataBySource(source)
+        ?: fetchAndProcess(source)
+
+    private suspend fun fetchAndProcess(source: String) = hotelRetrofitClient.fetchHotelInfo(source).toString()
+        .let { jsonData ->
+            // parsing response json into nested & flattened Attributes objects (e.g :  location.address, amenities.general, .. )
+            jsonUtils.jsonFileToMap(jsonData)
+                .let {
+                    // standardize attribute key name (e.g : facilities -> amenities.other, facilities.general -> amenities.general, ...)
+                    hotelInfoService.standardizeAttributeKeys(it)
+                }
+        }
+        .also {
+            cacheService.putDataBySource(source, it)
+        }
+    suspend fun updateCacheData() {
+        configurationRepo.getSources()
+            .forEach { source ->
+                fetchAndProcess(source)
+            }
     }
 
 

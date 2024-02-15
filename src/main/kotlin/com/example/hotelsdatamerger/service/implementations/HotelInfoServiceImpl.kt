@@ -1,8 +1,6 @@
 package com.example.hotelsdatamerger.service.implementations
 
 import com.example.hotelsdatamerger.dto.*
-import com.example.hotelsdatamerger.facade.SearchingFacade
-import com.example.hotelsdatamerger.model.HotelAttributeTemplate
 import com.example.hotelsdatamerger.repo.rest.HotelRetrofitClient
 import com.example.hotelsdatamerger.repo.source.IConfigurationRepo
 import com.example.hotelsdatamerger.service.IContentService
@@ -22,15 +20,8 @@ class HotelInfoServiceImpl(
 ) : IHotelInfoService {
 
     // Initializing instance of Logger for Service
-    val logger: Logger = LoggerFactory.getLogger(SearchingFacade::class.java)
+    val logger: Logger = LoggerFactory.getLogger(HotelInfoServiceImpl::class.java)
 
-    val attributeTemplate: Map<String, HotelAttributeTemplate> by lazy {
-        configurationRepo.getHotelInfoTemplate()
-            .map {
-                it.name to it
-            }
-            .toMap()
-    }
     val attributeRegex: List<AttributeDefinition> by lazy {
         configurationRepo.getAttributeSet()
     }
