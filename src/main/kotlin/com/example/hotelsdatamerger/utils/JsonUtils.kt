@@ -1,12 +1,10 @@
 package com.example.hotelsdatamerger.utils
 
 import com.example.hotelsdatamerger.dto.AttributeContent
-import com.example.hotelsdatamerger.dto.AttributeDefinition
 import com.example.hotelsdatamerger.dto.InfoObject
 import com.example.hotelsdatamerger.facade.SearchingFacade
 import com.example.hotelsdatamerger.repo.source.IConfigurationRepo
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -22,7 +20,7 @@ class JsonUtils(
     val logger: Logger = LoggerFactory.getLogger(SearchingFacade::class.java)
 
     fun objectToString(anyObj: Any): String = objectMapper.writeValueAsString(anyObj)
-    fun jsonFileToMap(jsonString: String): List<InfoObject> {
+    fun parseJsonString(jsonString: String): List<InfoObject> {
 
         return objectMapper.readValue(jsonString, object : TypeReference<List<Map<String, Any?>>>() {})
             ?.map {
@@ -37,6 +35,11 @@ class JsonUtils(
             ?: emptyList()
 
     }
+
+    fun mapToInfoObject(mapData: Map<String, Any?>) =
+        flatten("",
+            mapData.filterNot { (key, value) -> value == null }
+                .map { (key, value) -> key to value!! })
 
     fun attributeToJsonObject(attributes: List<AttributeContent>): Map<String, Any> {
         return attributes

@@ -6,6 +6,6 @@ import com.example.hotelsdatamerger.dto.InfoObject
 interface IDistributedCache {
     fun put(hashOfRawData: String, processedHotelInfo: FlatHotelInfo)
     fun get(hashOfRawData: String) : FlatHotelInfo?
-    fun putDataBySource(source: String, jsonData: List<FlatHotelInfo>)
-    fun getDataBySource(source: String) : List<FlatHotelInfo>?
+    fun putMergedData(jsonData: Map<String, FlatHotelInfo>)
+    fun getMergedData(): Map<String, FlatHotelInfo>?
 }

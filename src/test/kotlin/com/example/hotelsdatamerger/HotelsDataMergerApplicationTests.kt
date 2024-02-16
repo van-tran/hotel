@@ -1,12 +1,10 @@
 package com.example.hotelsdatamerger
 
 import com.example.hotelsdatamerger.dto.AttributeContent
-import com.example.hotelsdatamerger.facade.SearchingFacade
 import com.example.hotelsdatamerger.service.IHotelInfoService
 import com.example.hotelsdatamerger.utils.JsonUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
@@ -36,7 +34,7 @@ class HotelsDataMergerApplicationTests {
     * */
     @Test
     fun flattenJson() {
-        jsonUtils.jsonFileToMap(TestSet1.rawData)
+        jsonUtils.parseJsonString(TestSet1.rawData)
             .also {
                 logger.info("result {}",jsonUtils.objectMapper.writeValueAsString(it))
                 assert(it[0].attributes.size == 11)
@@ -52,7 +50,7 @@ class HotelsDataMergerApplicationTests {
     * */
     @Test
     fun standardizeAtributeName() {
-        jsonUtils.jsonFileToMap(TestSet2.rawData)
+        jsonUtils.parseJsonString(TestSet2.rawData)
             .let {
                 runBlocking(Dispatchers.Default) {
                     hotelInfoService.standardizeAttributeKeys(it)
@@ -77,7 +75,7 @@ class HotelsDataMergerApplicationTests {
     * */
     @Test
     fun mergeListStringsFromDiffSources() {
-        val dataFromSource1 = jsonUtils.jsonFileToMap(TestSet3.rawData1)
+        val dataFromSource1 = jsonUtils.parseJsonString(TestSet3.rawData1)
             .let {
                 runBlocking(Dispatchers.Default) {
                     hotelInfoService.standardizeAttributeKeys(it)
@@ -87,7 +85,7 @@ class HotelsDataMergerApplicationTests {
                 logger.info("data 1 {}", jsonUtils.objectMapper.writeValueAsString(it))
             }
 
-        val dataFromSource2 = jsonUtils.jsonFileToMap(TestSet3.rawData2)
+        val dataFromSource2 = jsonUtils.parseJsonString(TestSet3.rawData2)
             .let {
                 runBlocking(Dispatchers.Default) {
                     hotelInfoService.standardizeAttributeKeys(it)
@@ -121,7 +119,7 @@ class HotelsDataMergerApplicationTests {
     * */
     @Test
     fun mergeListObjectsFromDiffSources() {
-        val dataFromSource1 = jsonUtils.jsonFileToMap(TestSet4.rawData1)
+        val dataFromSource1 = jsonUtils.parseJsonString(TestSet4.rawData1)
             .let {
                 runBlocking(Dispatchers.Default) {
                     hotelInfoService.standardizeAttributeKeys(it)
@@ -131,7 +129,7 @@ class HotelsDataMergerApplicationTests {
                 logger.info("data 1 {}", jsonUtils.objectMapper.writeValueAsString(it))
             }
 
-        val dataFromSource2 = jsonUtils.jsonFileToMap(TestSet4.rawData2)
+        val dataFromSource2 = jsonUtils.parseJsonString(TestSet4.rawData2)
             .let {
                 runBlocking(Dispatchers.Default) {
                     hotelInfoService.standardizeAttributeKeys(it)
@@ -167,7 +165,7 @@ class HotelsDataMergerApplicationTests {
     * */
     @Test
     fun finalObjectFromDiffSources() {
-        val dataFromSource1 = jsonUtils.jsonFileToMap(TestSet5.rawData1)
+        val dataFromSource1 = jsonUtils.parseJsonString(TestSet5.rawData1)
             .let {
                 runBlocking(Dispatchers.Default) {
                     hotelInfoService.standardizeAttributeKeys(it)
@@ -177,7 +175,7 @@ class HotelsDataMergerApplicationTests {
                 logger.info("data 1 {}", jsonUtils.objectMapper.writeValueAsString(it))
             }
 
-        val dataFromSource2 = jsonUtils.jsonFileToMap(TestSet5.rawData2)
+        val dataFromSource2 = jsonUtils.parseJsonString(TestSet5.rawData2)
             .let {
                 runBlocking(Dispatchers.Default) {
                     hotelInfoService.standardizeAttributeKeys(it)
@@ -217,7 +215,7 @@ class HotelsDataMergerApplicationTests {
     * */
     @Test
     fun buildResponseFromFlattenMap() {
-        jsonUtils.jsonFileToMap(TestSet6.rawData1)
+        jsonUtils.parseJsonString(TestSet6.rawData1)
             .let {
                 runBlocking(Dispatchers.Default) {
                     hotelInfoService.standardizeAttributeKeys(it)

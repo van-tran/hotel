@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  app:
+    container_name: hotels-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hotel-merger:latest
+    ports:
+      - ${APP_PORT}:8080
+    networks:
+      - spring-cloud-network
+  redis:
+    container_name: redis
+    image: redis:7.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASS}
+    volumes:
+      - cache:/data
+volumes:
+  cache:
+    driver: local
+networks:
+  spring-cloud-network:
+    driver: bridge

@@ -23,21 +23,11 @@ class SearchingFacade(
     val logger: Logger = LoggerFactory.getLogger(SearchingFacade::class.java)
 
     suspend fun fetchSources() = configurationRepo.getSources()
-    suspend fun fetchTemplate() = configurationRepo.getHotelInfoTemplate()
 
     public suspend fun fetchHotels(searchCriteria: SearchCriteria): List<Map<String, Any>> {
 //		0. fetch hotels from sources
-        return configurationRepo.getSources()
-            .flatMap { source ->
-                getFlatHotelInfo(source)
-
-            }.groupBy {
-                // group hotel info from different sources
-                it.hotelID
-            }.mapValues { (hotelID, lstOfData) ->
-                // score & merge attributes with the same attribute name
-                hotelInfoService.mergeAttributesFromDifferentSource(hotelID, lstOfData)
-            }.let { mapOfHotels ->
+        return queryMergedHotelInfo()
+            .let { mapOfHotels ->
                 // filter by hotel id
                 when (searchCriteria) {
                     is SearchCriteria.ByHotelID -> mapOfHotels
@@ -60,26 +50,34 @@ class SearchingFacade(
 
     }
 
-    private suspend fun getFlatHotelInfo(source: String) = cacheService.getDataBySource(source)
-        ?: fetchAndProcess(source)
+    private suspend fun SearchingFacade.queryMergedHotelInfo() =
+        cacheService.getMergedData()
+            ?: fetchAndProcess()
 
-    private suspend fun fetchAndProcess(source: String) = hotelRetrofitClient.fetchHotelInfo(source).toString()
-        .let { jsonData ->
-            // parsing response json into nested & flattened Attributes objects (e.g :  location.address, amenities.general, .. )
-            jsonUtils.jsonFileToMap(jsonData)
+    private suspend fun fetchAndProcess() = configurationRepo.getSources()
+        .flatMap { source ->
+            hotelRetrofitClient.fetchHotelInfo(source)
+                .let { response ->
+                    // parsing response json into nested & flattened Attributes objects (e.g :  location.address, amenities.general, .. )
+                    jsonUtils.parseJsonString(response.string())
+                }
                 .let {
                     // standardize attribute key name (e.g : facilities -> amenities.other, facilities.general -> amenities.general, ...)
                     hotelInfoService.standardizeAttributeKeys(it)
                 }
+        }.groupBy {
+            // group hotel info from different sources
+            it.hotelID
+        }.mapValues { (hotelID, lstOfData) ->
+            // score & merge attributes with the same attribute name
+            hotelInfoService.mergeAttributesFromDifferentSource(hotelID, lstOfData)
         }
         .also {
-            cacheService.putDataBySource(source, it)
+            cacheService.putMergedData(it)
         }
+
     suspend fun updateCacheData() {
-        configurationRepo.getSources()
-            .forEach { source ->
-                fetchAndProcess(source)
-            }
+        fetchAndProcess()
     }
 
 
