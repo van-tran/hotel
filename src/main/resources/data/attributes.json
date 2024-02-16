@@ -48,7 +48,7 @@
     "regex" :"((amenities)|(facilities)).room"
   },
   {
-    "replacement" :"amenities.other",
+    "replacement" :"amenities.others",
     "regex" :"^((amenities)|(facilities))$",
     "virtualNode" : true
   },
@@ -65,7 +65,7 @@
     "regex" :"((images)|(photos)).amenities"
   },
   {
-    "replacement" :"images.other",
+    "replacement" :"images.others",
     "regex" :"^((images)|(photos))$",
     "virtualNode" : true
   },

@@ -38,9 +38,9 @@ class SearchingFacade(
 
                     is SearchCriteria.ByDestinationID -> mapOfHotels.values.filter {
                         it.content.attributes.any {
-                            it.name == "destination"
+                            it.name == "destination_id"
                                     && it is AttributeContent.PlainString<*>
-                                    && searchCriteria.destIDs.contains(it.value)
+                                    && searchCriteria.destIDs.contains(it.value.toString())
                         }
                     }
                 }

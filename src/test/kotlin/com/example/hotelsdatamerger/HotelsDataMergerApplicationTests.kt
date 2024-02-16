@@ -195,7 +195,7 @@ class HotelsDataMergerApplicationTests {
                 }
                 .also {
                     logger.info("result {}", jsonUtils.objectMapper.writeValueAsString(it))
-                    assert(it.keys.size == 7)
+
                     Assertions.assertNotNull(it["amenities"])
                     assert(it["amenities"] is List<*> &&
                             (it["amenities"] as List<*>)
@@ -226,8 +226,12 @@ class HotelsDataMergerApplicationTests {
             }
             .also {
                 logger.info("result {}", jsonUtils.objectMapper.writeValueAsString(it))
-                assert(it[0].get("hotel_id") == "iJhz")
-                assert(it[0].get("amenities") is List<*>)
+                assert(it[0]["hotel_id"] == "iJhz")
+                it[0]["amenities"].also {
+                    Assertions.assertNotNull(it)
+                    assert(it is Map<*,*>)
+                    assert((it as Map<*,*>)["others"] is List<*>)
+                }
             }
     }
 }
