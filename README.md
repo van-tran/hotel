@@ -19,9 +19,9 @@
 * Project has default configuration within .env file
 *
 * After init gradle,
-* Run test cases : ./gradlew bootTestRun
-* Build Jar file :  ./gradlew bootJar
+* Run test cases : `./gradlew bootTestRun`
+* Build Jar file :  `./gradlew bootJar`
 * Then, run following command to deploy docker containers :
-  docker compose up --build -d
+  `docker compose up --build -d`
   
   

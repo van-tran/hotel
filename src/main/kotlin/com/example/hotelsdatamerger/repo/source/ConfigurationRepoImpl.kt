@@ -36,10 +36,10 @@ class ConfigurationRepoImpl(val objectMapper: ObjectMapper) : IConfigurationRepo
 //        object : TypeReference<List<String>>() {})
 
     override fun getAttributeSet(): List<AttributeDefinition> =
-        objectMapper.readValue(readJsonString("classpath:data/attributes.json"),
+        objectMapper.readValue(readJsonString("data/attributes.json"),
             object : TypeReference<List<AttributeDefinition>>() {})
     override fun getContentMapper(): List<AttributeContentResolver> =
-        objectMapper.readValue(readJsonString("classpath:data/content_filter.json"),
+        objectMapper.readValue(readJsonString("data/content_filter.json"),
             object : TypeReference<List<AttributeContentResolver>>() {})
 
 }

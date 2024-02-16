@@ -61,7 +61,7 @@ class HotelsDataMergerApplicationTests {
                 assert(it[0].content.attributes.size == 10)
                 Assertions.assertNotNull(it[0].content.attributes.find { it.name == "hotel_id" })
                 Assertions.assertNotNull(it[0].content.attributes.find { it.name == "destination_id" })
-                it[0].content.attributes.find { it.name == "amenities.other" }
+                it[0].content.attributes.find { it.name == "amenities.others" }
                     .also {
                         Assertions.assertNotNull(it)
                         assert(it!!.virtualNode == true)
@@ -105,7 +105,7 @@ class HotelsDataMergerApplicationTests {
                     assert(it.hotelID == dataFromSource1.hotelID)
                     Assertions.assertNotNull(it.content.attributes.find { it.name == "hotel_id" })
                     Assertions.assertNotNull(it.content.attributes.find { it.name == "destination_id" })
-                    it.content.attributes.find { it.name == "amenities.other" }
+                    it.content.attributes.find { it.name == "amenities.others" }
                         .also {
                             Assertions.assertNotNull(it)
                             assert(it!!.virtualNode == true)
@@ -197,8 +197,9 @@ class HotelsDataMergerApplicationTests {
                     logger.info("result {}", jsonUtils.objectMapper.writeValueAsString(it))
 
                     Assertions.assertNotNull(it["amenities"])
-                    assert(it["amenities"] is List<*> &&
-                            (it["amenities"] as List<*>)
+                    assert(it["amenities"] is Map<*,*> &&
+                            (it["amenities"] as Map<*,*>)
+                                ?.values
                                 ?.map { it as String }
                                 ?.none {
                                     it.startsWith(" ")
