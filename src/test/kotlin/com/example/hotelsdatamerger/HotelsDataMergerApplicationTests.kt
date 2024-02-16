@@ -200,7 +200,7 @@ class HotelsDataMergerApplicationTests {
                     assert(it["amenities"] is Map<*,*> &&
                             (it["amenities"] as Map<*,*>)
                                 ?.values
-                                ?.map { it as String }
+                                ?.flatMap { it as List<String> }
                                 ?.none {
                                     it.startsWith(" ")
                                 } ?: false
